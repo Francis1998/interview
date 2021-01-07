@@ -138,5 +138,23 @@
 ## HR会问的玄学问题
 ## 补充
 
-
+> 1. python装饰器（简洁说：封装一个函数，用这样或者那样的方式来修改他的行为。在不改变原函数的内部逻辑和函数调用代码的情况下进行功能扩展。由decorator和嵌套的wrapper组成一个共生体，这个共生体我们叫闭包，闭包满足三个条件：1、函数嵌套函数2、函数返回函数3、函数之间有引用）
+>
+>    通过decorator来传入实际要运行的函数，通过wrapper函数来传入函数参数并调用函数，同时在wrapper函数实现需要的逻辑。
+>
+>    @ a_new_decorator
+>
+>    \#等价于 a_function_requiring_decoration = a_new_decorator(a_function_requiring_decoration)
+>
+>    def a_function_requiring_decoration():
+>
+>    
+>
+>    print(a_function_requiring_decoration.__name__) #__name__表示当前模块执行过程的名称
+>
+>    被装饰后的函数其实是另外一个函数了，__name__(变成wrapper)、__doc__(变成decorator的注释)的属性发生变化。python的functools包提供了叫wraps的decorator能保留原函数的名称和函数属性，通过复制操作。
+>
+>    可参考以下网址
+>
+>    https://www.runoob.com/w3cnote/python-func-decorators.html
 
