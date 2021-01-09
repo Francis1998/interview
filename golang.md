@@ -72,7 +72,7 @@
 
 ## 10、gc流程
 
-> ![img](.\golang.assets\clip_image002.jpg)
+> ![img](./golang.assets/clip_image002.jpg)
 >
 > gc有标记用的和清扫用的两种后台任务。标记用的后台任务会在需要时启动，可以同时启动的任务数量大约是P的数量的25%。
 >
@@ -96,7 +96,7 @@
 >
 > Runtime将goroutines(G)调度到P（逻辑处理器），每台P有M（逻辑机器）。
 >
-> ![IMG_256](.\golang.assets\clip_image002-1610199199949.jpg)
+> ![IMG_256](./golang.assets/clip_image002-1610199199949.jpg)
 >
 > **内存管理组件**
 >
@@ -104,7 +104,7 @@
 >
 > 留驻内存被划分为多个8k的页，由全局的mheap对象管理。mheap通过把页归类成不同的结构进行管理，mheap中管理内存页的基本单位为mspan（双向链表），类别从8bytes到32KB
 >
-> ![img](.\golang.assets\clip_image004.jpg)
+> ![img](./golang.assets/clip_image004.jpg)
 >
 > 每个span存在两个，一个用于带指针的对象，一个用于无指针的对象。
 >
@@ -128,7 +128,7 @@
 >
 > 线性分配器（原理：在内存中维护一个指向内存特定位置的指针，用户每次申请内存，分配器只需要检查剩余的空闲内存，然后返回分配的内存区域并修改指针在内存的位置）
 >
-> ![img](.\golang.assets\clip_image006.jpg)
+> ![img](./golang.assets/clip_image006.jpg)
 >
 > 被释放无法被重用。比较适合包括拷贝的垃圾回收算法：像标记-复制、标记-整理等算法，通过copy的方法整理对象的位置，将空闲内存合并，这样就可以利用线性分配器的效率提升内存分配器的性能。
 >
