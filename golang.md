@@ -134,7 +134,7 @@
 >
 > 空闲链表分配器：
 >
-> ![img](.\golang.assets\clip_image008.jpg)
+> ![img](./golang.assets/clip_image008.jpg)
 >
 > 每次用户申请内存的时候，空闲链表分配器会依次遍历空闲的内存块，找到足够大的内存，申请资源修改链表。
 >
