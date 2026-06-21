@@ -1,215 +1,243 @@
-## 1、Go Select 优先级问题（通过default）
+# Go Interview Questions
 
-> Select底下有多个可执行的case，则随机执行一个。通过default达到有序
+## Table of Contents
 
-## 2、智力题 有1000个一模一样的瓶子，其中有999瓶是普通的水，有1瓶是毒药。任何喝下毒药的生物都会在一星期之后死亡。现在，你只有10只小白鼠和一星期的时间，如何检验出那个瓶子里有毒药？
+- [Language Features](#language-features)
+- [Concurrency & CSP](#concurrency--csp)
+- [Channels & Select](#channels--select)
+- [Garbage Collection](#garbage-collection)
+- [Memory Allocator](#memory-allocator)
+- [Core Types](#core-types)
+- [Reflection & Interfaces](#reflection--interfaces)
+- [Brain Teasers](#brain-teasers)
+- [Large-Scale Data](#large-scale-data)
 
-> 二进制，2**10 = 1024 1死2死3死则是7号(111)有毒
->
+---
 
-## 2、5个海盗分配100个金币，从一号开始分配，要是没有50%的人满意，按顺序丢水里，重新分配，怎么分配，1号保证不死？
+## Language Features
 
-> 45：0 100
->
-> 345：100 0 0 (or 99 1 0)
->
-> 2345：98 0 1 1(or 97 0 2 1)
->
-> 12345: 97 0 1( 98 0 1 0 1 or 97 0 1 0 2)
+### 1. Go Select Priority (via `default`)
 
-## 3、 海量数据
+When multiple `case` branches in a `select` are ready, Go **chooses one at random**. Use a `default` branch for non-blocking behavior or to implement priority patterns (busy-poll lower-priority work).
 
-> 前K（分而治之/映射+hash统计+堆排序/快速/归并）；海量数据，不重复（2bitmap，00、01、10、11）or重复的数据(bitmap)；找中位数(分治：遍历，hash划分，统计个数直到k个；去到该机器中，排序找到n**2/2-x)
+### 2. Key Characteristics of Go
 
-## 4、Go语言的特点
+1. **Goroutines + channels** — concurrency via CSP; share memory by communicating.
+2. **User-space coroutines** — goroutines are lightweight (~2 KB stack); avoid expensive kernel thread switches.
+3. **Multi-core utilization** — goroutines multiplexed onto `GOMAXPROCS` OS threads.
+4. Strong standard library, concise syntax, compiled performance comparable to C with faster iteration than dynamic languages.
 
-> 1.底层使用goroutine作为并发实体，每个实体之间通过channel通讯来实现数据共享，将并发单元间的数据耦合拆解开。2.goroutine底层是使用协程(运行在用户态的用户线程)实现并发，用户空间、避免了内核态和用户态的相互切换，更小的栈空间能创建大量的实例3. 充分利用了多核的硬件资源，近似的把若干goroutine均分在物理线程上4.标准库完善5.代码简洁6.性能强劲的同时，开发效率又不差于Python等动态语言
+### 3. Can Struct Instances Be Compared?
 
-## 5、GO实例可以比较吗？
+- Structs are **comparable** if all fields are comparable.
+- **Slices, maps, and functions** are not comparable.
+- Comparing **pointers** compares addresses, not pointed-to values.
 
-> 实例不可比较，实例是指针
->
+### 4. `fallthrough` in `switch`
 
-## 6、reflect包基本用法
+Go `switch` breaks automatically after each case (unlike C). `fallthrough` forces execution into the next case. Cannot be used on the last branch (e.g., `default`).
 
-> Var a int
->
-> typeofA := reflect.TypeOf(a)
->
-> aInstance := reflect.New(typeofA)
->
+---
 
-## 7、Goroutine
+## Concurrency & CSP
 
-> 本质是协程，协程之间的调度由程序底层完成(线程和进程的调度是sys)，协程有自己的寄存器上下文和栈，切换时将两者保存到。
->
-> Go defer栈先进后出
->
+### Goroutines
 
-## 8、无缓冲chanel：
+A goroutine is a lightweight, user-scheduled coroutine managed by the Go runtime. Scheduling is done in user space (not by the kernel directly for each goroutine).
 
-> 传值立马close
+**GMP model:**
+- **G (Goroutine):** User-level task; `sched` holds context.
+- **M (Machine):** OS thread wrapper; count ≈ CPU cores (can grow under blocking).
+- **P (Processor):** Logical processor; holds local run queue and cache; count = `GOMAXPROCS` (default: num CPU).
 
-## 9、go垃圾回收机制
+When a goroutine blocks on I/O, the runtime may spin up another M so other goroutines on the same P keep running.
 
-> 用户会通过内存分配器在堆上申请内存，而垃圾回收器负责回收堆上的内存空间，共同管理着程序中的堆内存空间。
->
-> golang的gc，从最初的标记-清除，到v1.5实现三色标记并发gc。
->
-> V1.1标记-清除算法，先标记所有需要回收的对象，标记完成后，统一回收掉所有被标记的对象。通过可达性分析，从GC Roots，根据引用关系向下搜索。根节点root主要指的是全局变量、各个G的栈上的变量。**缺点：是保证****GC****期间，标记对象的状态不能变化，需要stop the world****。清除会产生大量不连续的内存碎片，当需要分配大对象时，不得不提前触发另一次GC**
->
-> V1.2 三色标记法
->
-> 白色（尚未被访问，结束仍白，表示不可达），黑色（本身和所有引用都已经被扫描），灰色（引用没有被扫描）。**程序和收集器是并发工作的，存活的对象可能被标记死亡，悬挂指针。黑色部分引用了新对象**
->
-> V1.3 写屏障（对比）
->
-> Go支持并行GC，屏障会记录第一次扫描时每个对象的状态，和第二次作对比，如果引用关系发生了变化就标灰，防止丢失
->
-> V1.4 辅助GC（分配内存的goroutine辅助）
->
-> 防止扫描后回收垃圾的速度跟不上用户程序分配对象的速度，同时运行的用户程序goroutine分配了内存，这个goroutine会被要求辅助GC做一部分工作。标记+回收。
+### Waiting for N Goroutines
 
-## 10、gc流程
+```go
+var wg sync.WaitGroup
+for i := 0; i < 100; i++ {
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        // work
+    }()
+}
+wg.Wait()
+```
 
-> ![img](./golang.assets/clip_image002.jpg)
->
-> gc有标记用的和清扫用的两种后台任务。标记用的后台任务会在需要时启动，可以同时启动的任务数量大约是P的数量的25%。
->
-> 整个GC会两次stop the world，mark阶段的开始和mark termination。
->
-> 1. mark prepare：初始化gc，包括开启写屏障和辅助gc，准备对root对象的扫描统计任务等。需要STW
->
-> 2. gc drains：扫描所有root对象，包括全局指针和goroutine栈上的指针，将其加入标记队列（灰色队列），并循环处理灰色队列的对象，直到灰色队列为空。后台并行执行
->
-> 3. mark termination：完成标记工作，重新扫描全局指针和栈，禁用写屏障和辅助gc。因为mark和用户程序是并行的，所以状态会变化，需要re-scan。需要STW。
->
-> 4. sweep:按照标记回收所有白色的对象，后台并行
->
-> 5. Sweep Termination: 对未清扫的span进行清扫, 只有上一轮的GC的清扫工作完成才可以开始新一轮的GC。
+**Deadlock example:** Two goroutines each lock mutex A then B, but in opposite order:
 
-## 11、Go的内存分配器
+```go
+// Goroutine 1: lock a, then b
+// Goroutine 2: lock b, then a
+// → deadlock
+```
 
-> Go静态语言，不需要vm。通过go的二进制文件中嵌入了go runtime，实现gc、调度、并发。内存空间由栈区、堆区组成，函参、返回值、局部变量分配到栈上，这部分由编译器管理。go的内存管理=需要内存时自动分配内存，不需要gc。这些工作由runtime完成。
->
-> go的内部内存结构
->
-> Runtime将goroutines(G)调度到P（逻辑处理器），每台P有M（逻辑机器）。
->
-> ![IMG_256](./golang.assets/clip_image002-1610199199949.jpg)
->
-> **内存管理组件**
->
-> 残余内存为os分配给进程的虚拟内存，Mheap为最大的内存块，进行gc的地方，存动态数据(编译时无法计算出大小的data)
->
-> 留驻内存被划分为多个8k的页，由全局的mheap对象管理。mheap通过把页归类成不同的结构进行管理，mheap中管理内存页的基本单位为mspan（双向链表），类别从8bytes到32KB
->
-> ![img](./golang.assets/clip_image004.jpg)
->
-> 每个span存在两个，一个用于带指针的对象，一个用于无指针的对象。
->
-> 相同大小级别的span可以归为一类，用mcentral管理。每个mcentral包含两个mspanList：empty：双向span链表，包括没有空闲对象的span或缓存的span。当此处的span被释放时，它将被移动到non-empty span。
->
-> non-empty：有空闲对象的span双向链表。当从mentral请求新的span，mcentral会从该链表中获取span并把它移动到empty span链表中。
->
-> 如果mcentral没有可用的span，那么就向mheap请求新页。在go源码实现中，mheap结构体由两组非常重要的字段，长度为134的mcentral数组（67需要scan的mcentral+67noscan的mcentral）。另一组就是管理堆区内存区域的arenas及相关字段。
->
-> arena：堆在已分配的虚拟内存中，根据需要增长和缩小。当需要更多的内存时，mheap从虚拟内存中，以每块64MB（64bit机器）的单位获取新内存，这块内存就叫做arena。
->
-> mcache是提供给P的告诉缓存，用于存储小单位（<=32KB）。用于存储动态数据。所有类大小的mcache包含scan和noscan类型的mspan。这些大对象的申请请求是以获取central lock为代价的，在任何给定的时间点只能满足一个P的请求。mcache需要的时候会从mcentral需要时请求新的span。
->
-> **设计原理**
->
-> 每次用户程序申请内存时，通过内存分配器申请新内存，分配器会负责从堆中初始化响应的内存区域
->
-> **分配方法**
->
-> 线性分配器、空闲链表分配器
->
-> 线性分配器（原理：在内存中维护一个指向内存特定位置的指针，用户每次申请内存，分配器只需要检查剩余的空闲内存，然后返回分配的内存区域并修改指针在内存的位置）
->
-> ![img](./golang.assets/clip_image006.jpg)
->
-> 被释放无法被重用。比较适合包括拷贝的垃圾回收算法：像标记-复制、标记-整理等算法，通过copy的方法整理对象的位置，将空闲内存合并，这样就可以利用线性分配器的效率提升内存分配器的性能。
->
-> 空闲链表分配器：
->
-> ![img](./golang.assets/clip_image008.jpg)
->
-> 每次用户申请内存的时候，空闲链表分配器会依次遍历空闲的内存块，找到足够大的内存，申请资源修改链表。
->
-> 首次适应：从链表头开始遍历，选择大于申请内存大小的第一个内存块
->
-> 循环首次适应：从上次遍历结束的位置开始遍历
->
-> 最优遍历：从头，找最合适的
->
-> 隔离适应：内存分割成多个链表，每个链表的内存块大小相同，申请内存时先找到满足条件的链表，再从链表中选择合适的内存块。
+Always acquire locks in a consistent global order.
 
-## 12、go指针
+### CSP Model
 
-> 1、类型指针，允许对这个指针类型的数据进行修改，传递的数据可以直接使用指针，无须拷贝数据，类型指针不能偏移和运算2、切片，由指向起始元素的原始指针、元素数量和容量组成
->
-> ptr := &house  //对字符串取地址，将指针保存到变量ptr中
->
-> fmt.print(“%T”,ptr) //res: *string
->
-> value:=*ptr   //对ptr指针进行取值，变量value的类型变成string
->
->  
->
-> 指针交换
->
-> func swap(a,b *int){
->
-> t:=*a
->
-> *a=*b //取b指针的值，赋给a指针指向的变量
->
-> *b=t
->
-> }
+**"Do not communicate by sharing memory; share memory by communicating."**
 
-## 13、go 切片slice的底层
+- Channels decouple sender and receiver (anonymous entities).
+- Channel send/receive is **synchronous** by default (unbuffered): sender blocks until receiver is ready.
 
-> 由数组、len、cap，在append扩容时，会查看数组后面有没有连续内存块，没有就重新生成大的
+---
 
-## 14、go数组
+## Channels & Select
 
-> 数组是值类型，赋值和传参都会复制整个数组数据（地址变化）。数组长度不可变。
+### Unbuffered Channel
 
-## 15、如何等待一百个协程执行完。
+Send blocks until receive completes — "handoff" semantics. Closing immediately after send in the same goroutine without a receiver causes panic.
 
-> var w syn.WaitGroup
->
-> w.add(1)
->
-> go func{w.done}
->
-> w.wait()
+### Buffered Channel
 
-## 16、map
+Send blocks only when buffer is full; receive blocks when empty.
 
-> map本身无顺序，通过slice让key有序。
->
-> sort.Strings(slice) //进入地址进行改变
+### Map Iteration Order
 
-## 17、fallthrough关键字
+Maps have **random iteration order**. To sort keys: collect keys into a slice, `sort.Strings(keys)`, then iterate.
 
->  go默认switch的每个case后面带break，匹配成功后跳出整个switch，使用fallthrough强制执行后面的代码。但是不能用在最后一个分支，比如default。
+---
 
-## 18、go并发机制以及它所使用的CSP并发模型
+## Garbage Collection
 
-> CSP以通信的方法来共享内存。用于描述两个独立的并发实体通过共享的通讯channel（管道）进行通信的并发工具。不关注发送信息的实体，而关注与发送信息时使用的channel。
->
-> go中的channel是被单独创建并且可以在进程之间传递，它的通信模式类似于boss-worker，一个实体将消息发送到channel中，然后又监听这个channel的实体处理，两个实体之间是匿名的，这个就实现实体中间的解耦，其中channel是同步的：一个消息被发送到channel中，最终是一定要被另外的实体消费掉的，在实现原理上类似一个阻塞的消息队列。
->
-> goroutine是go实际并发执行的实体，它底层是使用协程(coroutine)实现并发的，coroutine是一种处在用户态的用户线程。使用原因：1、用户空间 避免了内核态和用户态的切换导致的成本2、可以由语言和框架层进行调度3、更小的栈空间允许创建大量的实例
->
-> go中的goroutine的特性：1、golang内部有三个对象GMP，P上下文or处理器M工作线程G对象（goroutine）--一个P对应一个工作线程对象，线程去检查并执行goroutine对象。碰到goroutine对象阻塞的时候，会启动一个新的工作线程，以充分利用cpu资源。
->
-> G(Goroutine)：协程，用户级的轻量级线程，每个goroutine对象中的sched保存着其上下文信息。
->
-> M(Machine):对内核级线程的封装，数量对应真实的CPU数
->
-> P(Processor):G和M的调度对象，用来调度G和M之间的关联关系，其数量可以通过GOMAXPROCS()来设置，默认为核心数。
+Go's GC runs concurrently with user code (since Go 1.5 three-color mark-and-sweep).
+
+### Evolution
+
+| Version | Algorithm | Notes |
+|---------|-----------|-------|
+| Go 1.1 | Mark-sweep | STW during mark; fragmentation |
+| Go 1.2 | Three-color marking | White=unvisited, Gray=pending scan, Black=fully scanned |
+| Go 1.3 | Write barrier | Prevents floating garbage during concurrent mark |
+| Go 1.4 | Assist GC | Allocating goroutines help GC when allocation outpaces sweep |
+
+### GC Cycle (simplified)
+
+![GC cycle](./golang.assets/clip_image002.jpg)
+
+1. **Mark prepare (STW):** Enable write barrier, scan roots setup.
+2. **Mark (concurrent):** Scan roots (globals, stacks), drain gray queue.
+3. **Mark termination (STW):** Rescan stacks/globals (may have changed during concurrent mark).
+4. **Sweep (concurrent):** Reclaim unmarked (white) objects.
+5. **Sweep termination:** Finish sweeping before next GC cycle.
+
+Two STW pauses per cycle: mark start and mark termination.
+
+---
+
+## Memory Allocator
+
+Go embeds the runtime in the binary — no separate VM. Memory split into **stack** (function locals, compiler-managed) and **heap** (dynamic allocations, GC-managed).
+
+![GMP and memory](./golang.assets/clip_image002-1610199199949.jpg)
+
+### Hierarchy
+
+| Component | Role |
+|-----------|------|
+| **mheap** | Global heap; manages spans; source of new pages from OS |
+| **mspan** | Linked list of pages (8 KB units); size classes 8 B – 32 KB |
+| **mcentral** | Per size-class free lists (scan vs noscan spans) |
+| **mcache** | Per-P cache for allocations ≤ 32 KB (lock-free fast path) |
+| **arena** | 64 MB (64-bit) virtual memory chunks from OS |
+
+![Span layout](./golang.assets/clip_image004.jpg)
+
+### Allocation Strategies
+
+- **Linear allocator:** Bump pointer; fast but cannot reuse freed blocks individually.
+- **Free-list allocator:** Traverse free blocks; variants: first-fit, next-fit, best-fit.
+- **Segregated fit (Go's approach):** Size-class free lists → O(1) alloc for small objects.
+
+![Linear allocator](./golang.assets/clip_image006.jpg)
+
+![Free-list allocator](./golang.assets/clip_image008.jpg)
+
+---
+
+## Core Types
+
+### Pointers
+
+- Go has typed pointers; no pointer arithmetic (unlike C).
+- `&x` takes address; `*p` dereferences.
+- Passing pointers avoids copying large structs.
+
+### Slices
+
+Underlying struct: `{ pointer, len, cap }` referencing a backing array.
+
+- **Append:** If capacity exceeded, allocates new array (typically 2× growth) and copies.
+- Slices are **reference types** — mutating elements visible across copies sharing backing array.
+
+### Arrays
+
+- **Value type** — assignment and pass-by-value copy entire array.
+- Fixed length at compile time.
+
+---
+
+## Reflection & Interfaces
+
+### `reflect` Package Basics
+
+```go
+var a int
+t := reflect.TypeOf(a)   // reflect.Type
+v := reflect.ValueOf(a)  // reflect.Value
+p := reflect.New(t)      // *int allocated on heap
+```
+
+Use sparingly — loses compile-time type safety and adds overhead.
+
+### Interface Internals
+
+An interface value holds `(type, data)` pair. Empty interface `interface{}` (or `any`) holds any concrete type.
+
+---
+
+## Brain Teasers
+
+### Poisoned Wine (1000 bottles, 10 mice, 1 week)
+
+Encode bottle numbers in **binary**. Mouse *i* drinks from all bottles whose bit *i* is set. After one week, dead mice encode the poisoned bottle number.
+
+2¹⁰ = 1024 ≥ 1000 → sufficient.
+
+### Pirate Gold (5 pirates, 100 coins, majority vote or thrown overboard)
+
+Work **backwards** from the smallest crew:
+
+| Pirates alive | Pirate 1's offer (to 2,3,4,5) | Reasoning |
+|---------------|----------------------------------|-----------|
+| 2 | (100, 0) | Pirate 2 accepts anything to survive |
+| 3 | (99, 0, 1) | Bribe pirate 3 (gets 0 if only 2 remain) |
+| 4 | (99, 0, 1, 0) | Bribe pirate 3 |
+| 5 | (98, 0, 1, 0, 1) | Bribe pirates 3 and 5 |
+
+Pirate 1 proposes **(98, 0, 1, 0, 1)** and survives with votes from 1, 3, 5.
+
+---
+
+## Large-Scale Data
+
+### Top-K in a Large Dataset
+
+| Approach | Complexity | Notes |
+|----------|------------|-------|
+| Min-heap of size K | O(N log K) | Best general approach |
+| Quickselect | O(N) average | In-memory only |
+| Map-reduce + heap | O(N) distributed | Split, count/hash, merge |
+
+### Deduplication at Scale
+
+- **Bitmap:** If IDs are dense integers, use bit array.
+- **2-bit bitmap:** 00= unseen, 01= seen once, 10= duplicate — detect repeats in one pass.
+- **Bloom filter:** Probabilistic membership; no false negatives.
+
+### Median of Massive Data
+
+External merge sort or **bucket by hash range** → find bucket containing median → sort only that bucket.

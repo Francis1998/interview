@@ -1,23 +1,13 @@
 # Security Policy
 
-## Supported Versions
+This repository contains **educational markdown documentation only** — no executable application code, secrets, or user data.
 
-| Version | Supported |
-|---------|-----------|
-| 0.x     | ✅ Yes    |
+## Reporting Issues
 
-## Reporting a Vulnerability
+If you find incorrect technical information that could mislead interview preparation, please open a GitHub issue or pull request with:
 
-Please **do not** open a public GitHub issue for security vulnerabilities.
+- The file and section affected
+- A corrected explanation or authoritative reference
+- Optional: source citation (RFC, official docs, etc.)
 
-Send a private report to: security@interview.example.com
-
-Include:
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (optional)
-
-We will respond within 48 hours and aim to patch within 14 days.
-
-*Last reviewed: 2026-05-25*
+For security vulnerabilities in **GitHub Actions workflows** (if added in the future), please open a private security advisory on the repository rather than a public issue.

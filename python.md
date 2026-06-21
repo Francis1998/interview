@@ -1,160 +1,226 @@
-# Python-Interview-Questions
-[Python后端开发面经](#python后端开发面经)
-- [语言基础与特性](#语言基础与特性)          
-    - [1. type( ) 和 isinstance( )的区别](#1-type--和-isinstance-的区别)             
-    - [2. 全局解释器锁GIL：Global Interpreter Lock](#2-全局解释器锁gilglobal-interpreter-lock)           
-    - [3. Python内存管理](#3-python内存管理)                
-    - [4. Python协程](#4-python协程)          
-    - [5. Python怎么存储字符串，切片](#5-python怎么存储字符串切片) 
-- [数据结构与算法](#数据结构与算法) 
-    - [1. 归并排序原理阐述](#1-归并排序原理阐述)
-    - [2. 快排原理阐述](#2-快排原理阐述)
-    - [3. 常用查找和排序的时间复杂度](#3-常用查找和排序的时间复杂度)
-    - [4. 红黑树](#4-红黑树)   
-- [OS](#os)               
-    - [1. 并行、并发的区别](#1-并行并发的区别) 
-    - [2. 互斥锁](#2-互斥锁)
-    - [3. 进程和线程的区别](#3-进程和线程的区别)
-    - [4. 多进程和多线程的区别](#4-多进程和多线程的区别)
-- [计算机网络](#计算机网络)
-    - [1. OSI和TCP/IP模型](#1-osi和tcpip模型)
-    - [2. TCP/IP各层功能](#2-tcpip各层功能)
-    - [3. TCP建立连接过程（三次握手）](#3-tcp建立连接过程三次握手)
-    - [4. TCP断开连接过程（四次挥手）](#4-tcp断开连接过程四次挥手)
-    - [5. TCP和UDP的区别](#5-tcp和udp的区别)
-- [数据库](#数据库)
-    - [1. 知道几种数据库，有什么区别](#1-知道几种数据库有什么区别)
-    - [2. MySQL索引, B+树和B树的区别](#2-mysql索引-b树和b树的区别)
-- [业务问题](#业务问题)
-    - [1. 后端开发的工作内容](#1-后端开发的工作内容)
-- [HR会问的玄学问题](#hr会问的玄学问题)
-- [补充](#补充)
+# Python Interview Questions
 
-## 语言基础与特性
-##### 1. type( ) 和 isinstance( )的区别
-    type() 不会认为子类是一种父类类型，不考虑继承关系。
-    isinstance() 会认为子类是一种父类类型，考虑继承关系。
+## Table of Contents
 
-##### 2. 全局解释器锁GIL：Global Interpreter Lock
-> + 概念：它不是python语言的特性，而是python默认的解析器cpython的特性。cpython要求每个线程必须先获取GIL锁，才能执行线程中的代码。
-> + 目的：解决多线程同时竞争解析器程序的全局变量而出现的线程安全问题, 保证同一时刻只有一个线程可以执行代码，即同一时刻只有一个线程使用CPU.
-> + 不足：在多线程中不能充分利用多核cpu。原因是一个进程只存在一把gil锁，当在执行多个线程时，内部会争抢gil锁，这会造成当某一个线程没有抢到锁的时候会让cpu等待，进而不能合理利用多核cpu资源。
-> + 如何解决GIL问题：
-      - 换语言， 在处理多线程代码时，用其他语言代码，比如用
-      c或者java。
-      - 换解析器，比如换jpython。
-      - 业界常用的方案： 多进程+多协程方法。
+- [Language Basics](#language-basics)
+- [Memory & Concurrency](#memory--concurrency)
+- [Data Structures & Algorithms](#data-structures--algorithms)
+- [Operating Systems (Python context)](#operating-systems-python-context)
+- [Networking (Python context)](#networking-python-context)
+- [Databases (Python context)](#databases-python-context)
+- [Backend Engineering Workflow](#backend-engineering-workflow)
+- [Supplementary Topics](#supplementary-topics)
 
-> 一道面试题：
-> 描述Python GIL的概念， 以及它对python多线程的影响？一个单线程抓取网页的程序，与一个多线程抓取网页的程序哪个性能更高，并解释原因
-> > 1. GIL，全局解释器锁(global interpreter lock)，它是cpython解析器的特性，不是python的特性 ，它要求线程在执行前，需要获取GIL锁，
-> > 2. 由于GIL的存在，会影响多线程不能利用多核CPU资源(原因是一个进程只存在一把gil锁，当在执行多个线程时，内部会争抢gil锁，这会造成当某一个线程没有抢到锁的时候会让cpu等待，进而不能合理利用多核cpu资源)，通过多进程方式可利用多个CPU资源
-> > 3. 线程释放GIL锁的情况：
-> > > 1. 在IO操作等可能会引起阻塞的system call之前,可以暂时释放GIL,但在执行完毕后,必须重新获取GIL
-> > > 2. Python 3x使用计时器（执行时间达到阈值后，当前线程释放GIL）
-> >
-> > 4. 多线程爬取比单线程性能有提升，因为遇到IO阻塞会自动释放GIL锁，这样在线程阻塞情况下，可以执行其他线程中的代码。
+---
 
-##### 3. Python内存管理
-> - 垃圾回收机制：引用计数（导致循环引用）、标记-清除（清除循环引用，但可能导致悬空引用，维护成本高）、分代回收（较先进，0、1、2，越长寿的引用越有用）
-> - 内存池机制: 预先在内存中申请一定数量的，大小相等的内存块留作备用，当有新的内存需求时，就先从内存池中分配内存给这个需求，不够了之后再申请新的内存。这样做最显著的优势就是能够减少内存碎片，提升效率。
->> - 小对象（<256KB），pymalloc会在内存池中申请内存空间；
->> - 大于256kb，则会直接执行 new/malloc 的行为来申请新的内存空间。
->> - 内存释放: 当一个对象的引用计数变为 0 时，python就会调用它的析构函数。调用析构函数并不意味着最终一定会调用free 释放内存空间，如果真是这样的话，那频繁地申请、释放内存空间会使 Python的执行效率大打折扣。因此在析构时也采用了内存池机制，从内存池申请到的内存会被归还到内存池中，以避免频繁地 释放 动作。
+## Language Basics
 
-##### 4. Python协程
-##### 5. Python怎么存储字符串，切片
-> 切片和赋值都是浅拷贝
+### 1. `type()` vs `isinstance()`
 
-## 数据结构与算法
+- **`type(obj)`** returns the exact type of an object. It does **not** treat a subclass as an instance of its parent: `type(sub) is Parent` → `False`.
+- **`isinstance(obj, cls)`** checks inheritance: `isinstance(sub, Parent)` → `True`.
 
-##### 1. 归并排序原理阐述
-##### 2. 快排原理阐述
-##### 3. 常用查找和排序的时间复杂度
-##### 4. 红黑树
+Use `isinstance()` when you care about interface/behavior; use `type()` when you need the concrete class.
 
-## OS
-##### 1. 并行、并发的区别
-> - 并行：多个CPU同时执行多个任务，就好像有两个程序，这两个程序是真的在两个不同的CPU内同时被执行。
-> - 并发：CPU交替处理多个任务，还是有两个程序，但是只有一个CPU，会交替处理这两个程序，而不是同时执行，只不过因为CPU执行的速度过快，而会使得人们感到是在“同时”执行，执行的先后取决于各个程序对于时间片资源的争夺。
+### 2. Global Interpreter Lock (GIL)
 
-##### 2. 互斥锁 
-> 多线程时,保证修改共享数据时有序的修改,不会产生数据修改混乱
+**What it is:** The GIL is a feature of **CPython** (the default interpreter), not Python the language. It ensures only one thread executes Python bytecode at a time in a single process.
 
-##### 3. 进程和线程的区别
-> 进程是资源分配的最小单位，线程是CPU调度的最小单位。
-##### 4. 多进程和多线程的区别
+**Why it exists:** Protects CPython's internal state (reference counts, object structures) from race conditions without fine-grained locking on every object.
 
-## 计算机网络
+**Limitation:** CPU-bound multi-threaded Python cannot fully utilize multiple cores in one process — threads contend for the GIL.
 
-###### 1. OSI和TCP/IP模型
-###### 2. TCP/IP各层功能
-###### 3. TCP建立连接过程（三次握手）
-###### 4. TCP断开连接过程（四次挥手）
-###### 5. TCP和UDP的区别
+**When the GIL is released:**
+1. Before blocking I/O system calls (so other threads can run during I/O wait).
+2. In Python 3.x, after a time slice threshold, the current thread may release the GIL.
 
-## 数据库
-###### 1. 知道几种数据库，有什么区别
-> 主要讲关系和非关系型
-###### 2. MySQL索引, B+树和B树的区别
-第一次了解可以看这个带图的教程[B树和B+树的区别](https://www.cnblogs.com/xueqiuqiu/articles/8779029.html)
-> b树（balance tree）和b+树应用在数据库索引，可以认为是m叉的多路平衡查找树
-> - 为什么要用B、B+树？
->>因为我们要考虑磁盘IO的影响，它相对于内存来说是很慢的。数据库索引是存储在磁盘上的，当数据量大时，就不能把整个索引全部加载到内存了，只能逐一加载每一个磁盘页（对应索引树的节点）。所以我们要减少IO次数，对于树来说，IO次数就是树的高度，而“矮胖”就是b树的特征之一，它的每个节点最多包含m个孩子，m称为b树的阶，m的大小取决于磁盘页的大小。
-> - B树特征:
->> 1. 定义任意非叶子结点最多只有M个儿子，且M>2；
->> 2. 根结点的儿子数为[2, M]；
->> 3. 除根结点以外的非叶子结点的儿子数为[M/2, M]，向上取整；
->> 4. 非叶子结点的关键字个数=儿子数-1；
->> 5. 所有叶子结点位于同一层；
->> 6. k个关键字把节点拆成k+1段，分别指向k+1个儿子，同时满足查找树的大小关系
+**Mitigations:**
+- **Multiprocessing** — separate processes, each with its own GIL → true parallelism on multiple cores.
+- **Async I/O / coroutines** — single-threaded concurrency for I/O-bound work.
+- Alternative interpreters (Jython, PyPy with different models).
 
-> B+树特征	
->> 1. 有n棵子树的非叶子结点中含有n个关键字（b树是n-1个），这些关键字不保存数据，只用来索引，所有数据都保存在叶子节点（b树是每个关键字都保存数据）。
->> 2. 所有的叶子结点中包含了全部关键字的信息，及指向含这些关键字记录的指针，且叶子结点本身依关键字的大小自小而大顺序链接。
->> 3. 所有的非叶子结点可以看成是索引部分，结点中仅含其子树中的最大（或最小）关键字。
->> 4.  通常在b+树上有两个头指针，一个指向根结点，一个指向关键字最小的叶子结点。
->> 5. 同一个数字会在不同节点中重复出现，根节点的最大元素就是b+树的最大元素。
+**Interview scenario:** Single-threaded vs multi-threaded web scraper?
+- **I/O-bound scraping:** Multi-threading helps — threads release the GIL during network I/O, so other threads progress.
+- **CPU-bound parsing:** Multi-threading does **not** help much; use multiprocessing or native extensions.
 
-> 区别：
->> 1. B树每个结点都存储数据。而B+树只有叶子结点存数据，其他结点只用来索引，所有叶子结点用链表连接，便于去区间查找和遍历。
->> 2. B树中叶节点包含的关键字和其他节点包含的关键字是不重复的。B+树非叶子结点中仅含其子树中的最大（或最小）关键字。根节点的最大元素就是B+树的最大元素。
->> 3. B树中每个节点（非根节点）关键字个数的范围为\[m/2(向上取整)-1,m-1](根节点为\[1,m-1])，并且具有n个关键字的节点包含（n+1）棵子树。B+树中每个节点（非根节点）关键字个数的范围为\[m/2(向上取整),m](根节点为\[1,m])，具有n个关键字的节点包含（n）棵子树。
->> 4. B树中搜索有可能在非叶子结点结束，其搜索性能等价于在关键字全集内做一次二分查找。B+树中查找，无论查找是否成功，每次都是一条从根节点到叶节点的路径。
+### 3. Python Memory Management
 
-## 业务问题
-##### 1. 后端开发的工作内容
-> 1. 参与产品评议会议
-> 2. 前后端沟通确定API文档
-> 3. 数据库变更设计
-> 4. 第三方服务选型
-> 5. 实现业务逻辑
-> 6. 自测并跑通产品业务流程
-> 7. 组织前后端联调
-> 8. 交付产品经理确认
-> 9. 交付测试确认
-> 10. 正式上线产品功能
->* 建议看[知乎的回答](https://www.zhihu.com/question/339380714/answer/783242832)说的非常详细, 是以一个产品从需求到上线的时间线来说的，强推。
-## HR会问的玄学问题
-## 补充
+**Garbage collection (three layers):**
+1. **Reference counting** — primary mechanism; object freed when refcount hits 0. Cannot handle circular references alone.
+2. **Mark-and-sweep** — detects cycles; higher maintenance cost; may leave transient dangling references during collection.
+3. **Generational GC** — objects divided into generations 0, 1, 2; long-lived objects collected less often (more efficient).
 
-> 1. python装饰器（简洁说：封装一个函数，用这样或者那样的方式来修改他的行为。在不改变原函数的内部逻辑和函数调用代码的情况下进行功能扩展。由decorator和嵌套的wrapper组成一个共生体，这个共生体我们叫闭包，闭包满足三个条件：1、函数嵌套函数2、函数返回函数3、函数之间有引用）
->
->    通过decorator来传入实际要运行的函数，通过wrapper函数来传入函数参数并调用函数，同时在wrapper函数实现需要的逻辑。
->
->    @ a_new_decorator
->
->    \#等价于 a_function_requiring_decoration = a_new_decorator(a_function_requiring_decoration)
->
->    def a_function_requiring_decoration():
->
->    
->
->    print(a_function_requiring_decoration.__name__) #__name__表示当前模块执行过程的名称
->
->    被装饰后的函数其实是另外一个函数了，__name__(变成wrapper)、__doc__(变成decorator的注释)的属性发生变化。python的functools包提供了叫wraps的decorator能保留原函数的名称和函数属性，通过复制操作。
->
->    可参考以下网址
->
->    https://www.runoob.com/w3cnote/python-func-decorators.html
+**Memory pool (pymalloc):**
+- Pre-allocates fixed-size blocks to reduce fragmentation.
+- Objects **≤ 256 KB**: allocated from pymalloc pools.
+- Objects **> 256 KB**: allocated via system `malloc`.
+- On deallocation, small blocks return to the pool rather than immediately calling `free`, reducing allocator churn.
 
+### 4. Python Coroutines
+
+Coroutines are **cooperative**, user-scheduled functions that can suspend and resume at `await` points.
+
+| Feature | Thread | Coroutine |
+|---------|--------|-----------|
+| Scheduling | OS preemptive | Event loop cooperative |
+| Overhead | ~MB stack, kernel switches | ~KB, no kernel switch |
+| Best for | Mixed CPU/I/O (with GIL caveats) | High-concurrency I/O |
+
+Built on generators (`yield`) → `async`/`await` (PEP 492). Frameworks: `asyncio`, `aiohttp`, FastAPI.
+
+### 5. String Storage and Slicing
+
+- CPython strings are **immutable** sequences of Unicode code points (PEP 393 flexible representation).
+- **Slicing creates a new string** (copy of the sliced portion) — effectively a shallow copy of the character data.
+- Assignment to a slice variable does not mutate the original string.
+
+---
+
+## Memory & Concurrency
+
+See also [operating-systems.md](./operating-systems.md) for process/thread fundamentals.
+
+---
+
+## Data Structures & Algorithms
+
+See [algorithms.md](./algorithms.md) for detailed coverage of sorting, heaps, and top-K problems.
+
+### Quick Reference: Time Complexities
+
+| Algorithm | Best | Average | Worst | Space |
+|-----------|------|---------|-------|-------|
+| Quick sort | O(n log n) | O(n log n) | O(n²) | O(log n) |
+| Merge sort | O(n log n) | O(n log n) | O(n log n) | O(n) |
+| Binary search | O(1) | O(log n) | O(log n) | O(1) |
+| Hash table lookup | O(1) | O(1) | O(n) | O(n) |
+
+### Red-Black Tree (summary)
+
+Self-balancing BST with O(log n) insert/search/delete. Properties:
+1. Every node is red or black.
+2. Root and leaves (NIL) are black.
+3. Red nodes have black children.
+4. Every path from node to leaves has the same number of black nodes.
+
+Used in Python's `OrderedDict` (before 3.7 dict ordering), Java `TreeMap`, Linux CFS scheduler.
+
+---
+
+## Operating Systems (Python context)
+
+### Parallelism vs Concurrency
+
+- **Parallelism:** Multiple CPUs execute multiple tasks simultaneously (true simultaneous execution).
+- **Concurrency:** One CPU interleaves multiple tasks (appears simultaneous due to fast context switching).
+
+### Mutex (Lock)
+
+Ensures only one thread modifies shared data at a time, preventing race conditions.
+
+### Process vs Thread
+
+| | Process | Thread |
+|---|---------|--------|
+| Unit of | Resource allocation | CPU scheduling |
+| Memory | Separate address space | Shared within process |
+| Overhead | High (fork, IPC) | Low |
+| Crash isolation | Strong | Weak (one thread crash can kill process) |
+
+### Multiprocessing vs Multithreading
+
+- **Multiprocessing:** Bypasses GIL; best for CPU-bound Python.
+- **Multithreading:** Best for I/O-bound Python (GIL released during I/O).
+
+---
+
+## Networking (Python context)
+
+See [networking.md](./networking.md) for full TCP/HTTP/DNS coverage.
+
+---
+
+## Databases (Python context)
+
+See [mysql.md](./mysql.md) for index structures and transaction isolation.
+
+### SQL vs NoSQL (when asked)
+
+| | Relational (MySQL, PostgreSQL) | NoSQL (Redis, MongoDB) |
+|---|-------------------------------|------------------------|
+| Schema | Fixed, normalized | Flexible / schemaless |
+| Scaling | Vertical + read replicas | Horizontal sharding |
+| Transactions | ACID (InnoDB) | Varies (Redis: limited) |
+| Use case | Complex queries, consistency | Caching, documents, high write throughput |
+
+---
+
+## Backend Engineering Workflow
+
+Typical backend developer responsibilities across a feature lifecycle:
+
+1. Participate in product/requirements review.
+2. Align with frontend on **API contracts** (OpenAPI/REST/gRPC).
+3. Design **database schema** changes and migrations.
+4. Evaluate **third-party services** (payment, auth, messaging).
+5. Implement business logic and unit tests.
+6. Self-test end-to-end flows.
+7. Coordinate **integration testing** with frontend/mobile.
+8. Hand off to PM for acceptance.
+9. Support QA and fix bugs.
+10. Deploy and monitor in production.
+
+---
+
+## Supplementary Topics
+
+### Decorators
+
+A decorator wraps a function to extend behavior **without modifying** the function body or call sites.
+
+```python
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        # pre/post logic
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def greet():
+    print("hello")
+```
+
+`@my_decorator` is equivalent to `greet = my_decorator(greet)`.
+
+**Pitfall:** Wrapped function's `__name__` and `__doc__` become the wrapper's. Fix with `functools.wraps`:
+
+```python
+from functools import wraps
+
+def my_decorator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+```
+
+A decorator + nested wrapper that closes over outer scope forms a **closure** (nested function, returned function, free variable reference).
+
+### Context Managers
+
+`with` statement uses `__enter__` / `__exit__` for resource cleanup (files, locks, DB connections). Implement manually or via `@contextmanager`.
+
+### `*args` and `**kwargs`
+
+- `*args` — tuple of positional arguments.
+- `**kwargs` — dict of keyword arguments.
+- Used for flexible APIs, decorators, and forwarding calls.
+
+### List vs Tuple vs Set vs Dict
+
+| Type | Mutable | Ordered | Duplicates |
+|------|---------|---------|------------|
+| list | Yes | Yes (3.7+) | Yes |
+| tuple | No | Yes | Yes |
+| set | Yes | No | No |
+| dict | Yes | Yes (3.7+) | Keys unique |

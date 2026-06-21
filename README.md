@@ -1,20 +1,43 @@
-# interview
-针对国内面试八股
+# Software Engineering Interview Handbook
 
-由于本人技术栈有限，暂时只补充了python、golang、mysql、linux和计算机网络的一些常见面试问题，欢迎大家补充。
+A curated collection of **backend and infrastructure interview questions** with concise answers. Originally focused on Chinese tech interviews (八股); now fully translated to English and expanded for a broader audience.
 
-01/08/2021更新：
+Topics span languages, operating systems, databases, networking, caching, algorithms, and system design — the kinds of questions commonly asked for **backend, SRE, and platform engineering** roles.
 
-python已经对格式进行调整
+## Topics
 
-OS和golang暂时未调整格式
+| Topic | File | Coverage |
+|-------|------|----------|
+| Python | [python.md](./python.md) | GIL, memory, coroutines, decorators, backend workflow |
+| Go | [golang.md](./golang.md) | Goroutines, channels, GC, memory allocator, CSP model |
+| MySQL | [mysql.md](./mysql.md) | InnoDB vs MyISAM, indexes, transactions, normalization |
+| Linux | [linux.md](./linux.md) | Process/memory diagnostics, shell commands, I/O multiplexing |
+| Networking | [networking.md](./networking.md) | TCP/UDP, HTTP/TLS, DNS, CDN, security |
+| Operating Systems | [operating-systems.md](./operating-systems.md) | Processes, threads, user/kernel mode, IPC, interrupts |
+| Redis | [redis.md](./redis.md) | Single-thread model, I/O multiplexing, eviction, LRU |
+| Algorithms & DS | [algorithms.md](./algorithms.md) | Sorting, heaps, top-K, hash collisions, red-black trees |
+| System Design | [system-design.md](./system-design.md) | Scalability patterns, caching, load balancing, CAP |
 
-01/09/2021更新：
+## How to Use
 
-python、golang已经对格式进行调整
+1. **Pick your stack** — start with the language and database sections most relevant to your target role.
+2. **Cross-reference** — many questions overlap (e.g., TCP appears in both networking and OS sections from different angles).
+3. **Practice out loud** — these are interview prompts; rehearse explaining trade-offs, not just definitions.
+4. **Contribute** — PRs welcome for new questions, clearer explanations, or additional topics (Kubernetes, distributed systems, etc.).
 
-新增mysql、linux部分暂未调整格式
+## Roadmap
 
-OS暂时未调整格式
+- [x] English translation of all existing content
+- [x] Expanded Linux, MySQL, and OS sections
+- [x] Dedicated Redis and algorithms files
+- [ ] Add Kubernetes / cloud-native section
+- [ ] Add distributed systems (consensus, sharding, message queues)
+- [ ] Add behavioral / HR question templates
 
-后续补充redis
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for version history.
+
+## License
+
+Content is provided for educational use. External links and diagrams retain their original attribution.

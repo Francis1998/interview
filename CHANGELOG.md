@@ -1,26 +1,32 @@
 # Changelog
 
-All notable changes to **interview** are documented here.
+All notable changes to this repository are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [v0.1.21] - 2026-01-05
+## [Unreleased]
 
 ### Added
-- Improved documentation coverage for core modules
-- Added type annotations to utility functions
-- Extended test coverage for edge cases
+- Full English translation of all interview content
+- New topics: [operating-systems.md](./operating-systems.md), [redis.md](./redis.md), [algorithms.md](./algorithms.md), [system-design.md](./system-design.md)
+- Expanded Linux diagnostics, MySQL optimization, and Python supplementary sections
+- Structured table of contents and cross-links across all topic files
 
 ### Changed
-- Refactored internal logging to use structured format
-- Updated dependency pins for security patches
+- README rewritten as an English navigation hub with topic matrix and roadmap
+- Reorganized fragmented content from legacy `OS.md` into dedicated topic files
+- Improved markdown formatting, tables, and code examples throughout
 
-### Fixed
-- Resolved intermittent timeout issue in async operations
-- Fixed edge case in input validation logic
+### Removed
+- Legacy Chinese-only `OS.md` (content migrated to topic-specific files)
 
-## [v0.1.0] - 2025-12-08
+## [2021-01-09]
 
 ### Added
-- Initial project scaffold
-- Core agent runtime
-- Basic documentation
+- MySQL and Linux sections (Chinese)
+- Python and Go format improvements
+
+## [2021-01-08]
+
+### Added
+- Initial Python interview notes (Chinese)
+- Go, networking, and OS content
