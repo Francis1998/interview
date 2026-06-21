@@ -1,0 +1,4 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pillow>=10.4.0
+imageio>=2.34.0

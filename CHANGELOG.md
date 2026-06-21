@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Web preview server (`make serve`) — FastAPI UI at http://127.0.0.1:8080
+- Demo GIF asset (`assets/demo-handbook.gif`) for README
+- `requirements-dev.txt` for preview server dependencies
+
+### Changed
+- README redesigned as showcase with GIF, use cases, and live preview instructions
+
+## [2026-06-21]
+
+### Added
 - Full English translation of all interview content
 - New topics: [operating-systems.md](./operating-systems.md), [redis.md](./redis.md), [algorithms.md](./algorithms.md), [system-design.md](./system-design.md)
 - Expanded Linux diagnostics, MySQL optimization, and Python supplementary sections

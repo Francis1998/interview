@@ -44,6 +44,7 @@ logs/
 *.pid
 *.seed
 *.pid.lock
+assets/frames/
 
 # Distribution / packaging
 *.tar.gz

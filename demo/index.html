@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview Handbook — Live Preview</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <header>
+    <div class="brand">
+      <span class="logo">📘</span>
+      <div>
+        <h1>Interview Handbook</h1>
+        <p>Backend · Infra · System Design</p>
+      </div>
+    </div>
+    <div class="stats" id="stats">9 topics · 0 sections</div>
+  </header>
+  <main>
+    <aside class="sidebar">
+      <input type="search" id="search" placeholder="Search topics…" />
+      <nav id="topic-list"></nav>
+    </aside>
+    <article class="content">
+      <div id="topic-meta" class="topic-meta"></div>
+      <div id="rendered" class="markdown-body">
+        <div class="placeholder">
+          <h2>Select a topic</h2>
+          <p>Pick Python, Go, MySQL, Networking, System Design, and more from the sidebar.</p>
+        </div>
+      </div>
+    </article>
+  </main>
+  <footer>
+    <a href="https://github.com/Francis1998/interview" target="_blank">View on GitHub</a>
+    · Served locally via <code>make serve</code>
+  </footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>
